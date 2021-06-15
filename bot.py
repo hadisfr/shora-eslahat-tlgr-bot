@@ -5,6 +5,15 @@ from datetime import datetime
 import telebot
 
 
+def media_sort_key(media_name):
+    prefix = ""
+    if not media_name.startswith("آری"):
+        prefix += " "
+    if media_name.startswith("تجمع"):
+        prefix += " "
+    return prefix + media_name
+
+
 class Bot:
     """Shora Bot"""
     def __init__(
@@ -35,13 +44,22 @@ class Bot:
         self.advertises_media = advertises_media
         self.advertises_texts = advertises_texts
 
-        self.choices_main = self._get_reply_markup(map(self._get_city_name, self.promoted_cities + [self.msgs["other cities"], self.msgs["ad"]]))
-        self.choices_provinces = self._get_reply_markup(map(self._get_province_name, self.provinces + [self.msgs["back"]]))
+        self.choices_main = self._get_reply_markup(map(
+            self._get_city_name,
+            self.promoted_cities + [self.msgs["other cities"], self.msgs["ad"]]
+        ))
+        self.choices_provinces = self._get_reply_markup(map(
+            self._get_province_name,
+            self.provinces + [self.msgs["back"]]
+        ))
         self.choices_province_city = {
             province: self._get_reply_markup(map(self._get_city_name, cities + [self.msgs["other cities"]]))
             for province, cities in self.province_cities.items()
         }
-        self.choices_ads = self._get_reply_markup(map(self._get_ad_name, list(self.advertises_media.keys()) + [self.msgs["back"]]))
+        self.choices_ads = self._get_reply_markup(map(
+            self._get_ad_name,
+            list(sorted(self.advertises_media.keys(), key=media_sort_key)) + [self.msgs["back"]]
+        ))
         
         self.bot = telebot.TeleBot(token, parse_mode="MARKDOWN")
         self.bot.message_handler(commands=["start"])(self._handle_start)
