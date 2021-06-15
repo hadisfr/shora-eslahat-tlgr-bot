@@ -4,7 +4,7 @@ import csv
 import json
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, DefaultDict
+from typing import Dict, DefaultDict, Tuple
 
 from bot import Bot
 
@@ -29,6 +29,19 @@ def get_city_lists() -> Dict[str, str]:
     return {get_city_name(addr): addr for addr in map(str, Path("lists").glob('*.*'))}
 
 
+def get_advertises() -> Tuple[Dict[str, str], Dict[str, str]]:
+    def get_ad_name(addr: str) -> str:
+        return ".".join(addr.split("/")[-1].split(".")[:-1])
+
+    advertises_media = {get_ad_name(addr): addr for addr in map(str, Path("ad").glob('*.*'))}
+    advertises_texts = {get_ad_name(addr): addr for addr in map(str, Path("ad-txt").glob('*.*'))}
+    for key in list(filter(lambda key: key not in advertises_texts, advertises_media.keys())):
+        del advertises_media[key]
+    for key in list(filter(lambda key: key not in advertises_media, advertises_texts.keys())):
+        del advertises_texts[key]
+    return advertises_media, advertises_texts
+
+
 def get_config() -> Dict[str, object]:
     with open("config.json") as f:
         return json.load(f)
@@ -42,6 +55,7 @@ def main():
         config["promoted cities"],
         get_city_lists(),
         get_province_map(),
+        *get_advertises(),
     )
     bot.run()
 

@@ -13,7 +13,9 @@ class Bot:
         msgs: Dict[str, str],
         promoted_cities: List[str],
         city_lists: Dict[str, str],
-        province_cities: Dict[str, str]
+        province_cities: Dict[str, str],
+        advertises_media: Dict[str, str],
+        advertises_texts: Dict[str, str],
     ):
         self.city_lists = dict(city_lists)
         self.msgs = msgs
@@ -30,13 +32,16 @@ class Bot:
              )
         ))
         self.provinces = list(sorted(self.province_cities.keys()))
+        self.advertises_media = advertises_media
+        self.advertises_texts = advertises_texts
 
-        self.choices_main = self._get_reply_markup(map(self._get_city_name, self.promoted_cities + [self.msgs["other cities"]]))
+        self.choices_main = self._get_reply_markup(map(self._get_city_name, self.promoted_cities + [self.msgs["other cities"], self.msgs["ad"]]))
         self.choices_provinces = self._get_reply_markup(map(self._get_province_name, self.provinces + [self.msgs["back"]]))
         self.choices_province_city = {
             province: self._get_reply_markup(map(self._get_city_name, cities + [self.msgs["other cities"]]))
             for province, cities in self.province_cities.items()
         }
+        self.choices_ads = self._get_reply_markup(map(self._get_ad_name, list(self.advertises_texts.keys()) + [self.msgs["back"]]))
         
         self.bot = telebot.TeleBot(token, parse_mode="MARKDOWN")
         self.bot.message_handler(commands=["start"])(self._handle_start)
@@ -74,7 +79,7 @@ class Bot:
         self._select_main(chat_id)
 
     def _get_city_name(self, city: str) -> str:
-        if city == self.msgs["other cities"]:
+        if city in {self.msgs["other cities"], self.msgs["ad"]}:
             return city
         return " ".join([self.msgs["city prefix"], city])
 
@@ -82,6 +87,11 @@ class Bot:
         if province == self.msgs["back"]:
             return province
         return " ".join([self.msgs["province prefix"], province])
+
+    def _get_ad_name(self, ad: str) -> str:
+        if ad == self.msgs["back"]:
+            return ad
+        return " ".join([self.msgs["ad prefix"], ad])
 
     def _select_main(self, chat_id: str) -> None:
         self.bot.send_message(chat_id, self.msgs["select main"], reply_markup=self.choices_main)
@@ -105,6 +115,21 @@ class Bot:
     def _send_provinces(self, chat_id: str) -> None:
         self.bot.send_message(chat_id, self.msgs["select province"], reply_markup=self.choices_provinces)
 
+    def _select_ads(self, chat_id: str) -> None:
+        self.bot.send_message(chat_id, self.msgs["select ad"], reply_markup=self.choices_ads)
+
+    def _send_ad(self, chat_id: str, ad: str) -> None:
+        if ad not in self.advertises_texts:
+            self._handle_wrong_input(chat_id)
+            return
+        with open(self.advertises_texts[ad]) as f:
+            ad_text = f.read()
+        caption = "\n\n".join([ad_text, self.msgs["ad suffix"]])
+        with open(self.advertises_media[ad], "rb") as photo:
+            self.bot.send_photo(chat_id, photo, caption=caption)
+        self._log("got ad %s" % ad, chat_id)
+        self._select_main(chat_id)
+
     def _handle_start(self, msg) -> None:
         chat_id = msg.chat.id
         self._log("started the bot", chat_id)
@@ -123,10 +148,14 @@ class Bot:
             self._send_provinces(chat_id)
         elif text == self.msgs["back"]:
             self._select_main(chat_id)
+        elif text == self.msgs["ad"]:
+            self._select_ads(chat_id)
         elif prefix == self.msgs["city prefix"]:
             self._send_list(chat_id, entity)
         elif prefix == self.msgs["province prefix"]:
             self._send_province_cities(chat_id, entity)
+        elif prefix == self.msgs["ad prefix"]:
+            self._send_ad(chat_id, entity)
         elif text in self.city_lists:
             self._send_list(chat_id, text)
         elif text in self.province_cities:
