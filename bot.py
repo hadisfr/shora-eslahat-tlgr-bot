@@ -119,8 +119,7 @@ class Bot:
             self._handle_wrong_input(chat_id)
             return
         caption = self.msgs["list caption pattern"] % city
-        with open(self.city_lists[city], "rb") as photo:
-            self.bot.send_photo(chat_id, photo, caption=caption)
+        self._send_file(self.city_lists[city], chat_id, caption)
         self._log("got list for %s" % city, chat_id)
         self.bot.send_message(chat_id, self.msgs["tnx"], reply_markup=telebot.types.ReplyKeyboardRemove())
 
@@ -148,11 +147,21 @@ class Bot:
             ad_text = self.msgs["ad default"]
         caption = "\n\n".join([ad_text, self.msgs["ad suffix"]])
 
-        with open(self.advertises_media[ad], "rb") as photo:
-            self.bot.send_photo(chat_id, photo, caption=caption)
+        self._send_file(self.advertises_media[ad], chat_id, caption)
 
         self._log("got ad %s" % ad, chat_id)
         self._select_main(chat_id)
+
+    def _send_file(self, addr, chat_id, caption=None):
+        addr_suffix = addr.split(".")[-1].lower()
+        with open(addr, "rb") as file:
+            if addr_suffix in {"png", "jpg", "jpeg", "webm", "png"}:
+                self.bot.send_photo(chat_id, file, caption=caption)
+            elif addr_suffix in {"pdf"}:
+                self.bot.send_document(chat_id, file, caption=caption, timeout=30)
+            else:
+                self._log("could not send '%s': unknown type" % addr)
+                self.bot.send_message(chat_id, self.msgs["internal error"])
 
     def _handle_start(self, msg) -> None:
         chat_id = msg.chat.id
