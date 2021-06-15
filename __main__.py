@@ -35,8 +35,6 @@ def get_advertises() -> Tuple[Dict[str, str], Dict[str, str]]:
 
     advertises_media = {get_ad_name(addr): addr for addr in map(str, Path("ad").glob('*.*'))}
     advertises_texts = {get_ad_name(addr): addr for addr in map(str, Path("ad-txt").glob('*.*'))}
-    for key in list(filter(lambda key: key not in advertises_texts, advertises_media.keys())):
-        del advertises_media[key]
     for key in list(filter(lambda key: key not in advertises_media, advertises_texts.keys())):
         del advertises_texts[key]
     return advertises_media, advertises_texts

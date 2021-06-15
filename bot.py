@@ -41,7 +41,7 @@ class Bot:
             province: self._get_reply_markup(map(self._get_city_name, cities + [self.msgs["other cities"]]))
             for province, cities in self.province_cities.items()
         }
-        self.choices_ads = self._get_reply_markup(map(self._get_ad_name, list(self.advertises_texts.keys()) + [self.msgs["back"]]))
+        self.choices_ads = self._get_reply_markup(map(self._get_ad_name, list(self.advertises_media.keys()) + [self.msgs["back"]]))
         
         self.bot = telebot.TeleBot(token, parse_mode="MARKDOWN")
         self.bot.message_handler(commands=["start"])(self._handle_start)
@@ -119,14 +119,20 @@ class Bot:
         self.bot.send_message(chat_id, self.msgs["select ad"], reply_markup=self.choices_ads)
 
     def _send_ad(self, chat_id: str, ad: str) -> None:
-        if ad not in self.advertises_texts:
+        if ad not in self.advertises_media:
             self._handle_wrong_input(chat_id)
             return
-        with open(self.advertises_texts[ad]) as f:
-            ad_text = f.read()
+
+        if ad in self.advertises_texts:
+            with open(self.advertises_texts[ad]) as f:
+                ad_text = f.read()
+        else:
+            ad_text = self.msgs["ad default"]
         caption = "\n\n".join([ad_text, self.msgs["ad suffix"]])
+
         with open(self.advertises_media[ad], "rb") as photo:
             self.bot.send_photo(chat_id, photo, caption=caption)
+
         self._log("got ad %s" % ad, chat_id)
         self._select_main(chat_id)
 
