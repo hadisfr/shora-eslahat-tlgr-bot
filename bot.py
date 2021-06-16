@@ -46,7 +46,10 @@ class Bot:
 
         self.choices_main = self._get_reply_markup(map(
             self._get_city_name,
-            self.promoted_cities + [self.msgs["other cities"], self.msgs["ad"]]
+            self.promoted_cities + [
+                # self.msgs["other cities"],
+                self.msgs["ad"],
+            ]
         ))
         self.choices_provinces = self._get_reply_markup(map(
             self._get_province_name,
