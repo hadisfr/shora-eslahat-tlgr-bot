@@ -6,6 +6,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, DefaultDict, Tuple
 
+# from telebot.apihelper import ApiTelegramException
+
 from bot import Bot
 
 
@@ -55,6 +57,17 @@ def main():
         get_province_map(),
         *get_advertises(),
     )
+    
+    # msg = """
+    # """
+    # for cid in [
+    # ]:
+    #     print(cid)
+    #     try:
+    #         bot.bot.send_message(cid, msg)
+    #     except ApiTelegramException as ex:
+    #         print(ex)
+    
     bot.run()
 
 
